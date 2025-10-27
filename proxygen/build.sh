@@ -175,6 +175,39 @@ function setup_googletest() {
   cd "$BWD" || exit
 }
 
+function setup_glog() {
+  GLOG_DIR=$DEPS_DIR/glog
+  GLOG_BUILD_DIR=$DEPS_DIR/glog/build
+  GLOG_VERSION=0.3.5
+
+  if [ ! -d "$GLOG_DIR" ] ; then
+    echo -e "${COLOR_GREEN}[ INFO ] Cloning glog repo ${COLOR_OFF}"
+    git clone https://github.com/google/glog.git "$GLOG_DIR"
+  fi
+  
+  cd "$GLOG_DIR"
+  git fetch --tags
+  git checkout "v${GLOG_VERSION}"
+  
+  echo -e "${COLOR_GREEN}Building glog ${COLOR_OFF}"
+  mkdir -p "$GLOG_BUILD_DIR"
+  cd "$GLOG_BUILD_DIR" || exit
+  
+  cmake \
+    -DCMAKE_PREFIX_PATH="$DEPS_DIR" \
+    -DCMAKE_INSTALL_PREFIX="$DEPS_DIR" \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DWITH_GFLAGS=ON \
+    ..
+  make -j "$JOBS"
+  make install
+  echo -e "${COLOR_GREEN}glog is installed ${COLOR_OFF}"
+  cd "$BWD" || exit
+}
+
 function setup_zstd() {
   ZSTD_DIR=$DEPS_DIR/zstd
   ZSTD_BUILD_DIR=$DEPS_DIR/zstd/build/cmake/builddir
@@ -211,6 +244,7 @@ function setup_folly() {
     git clone https://github.com/facebook/folly.git "$FOLLY_DIR"
   fi
   synch_dependency_to_commit "$FOLLY_DIR" "$BASE_DIR"/../build/deps/github_hashes/facebook/folly-rev.txt
+  
   if [ "$PLATFORM" = "Mac" ]; then
     # Homebrew installs OpenSSL in a non-default location on MacOS >= Mojave
     # 10.14 because MacOS has its own SSL implementation.  If we find the
@@ -425,6 +459,7 @@ cd "$(dirname "$0")"
 
 setup_fmt
 setup_googletest
+setup_glog
 setup_zstd
 setup_folly
 setup_fizz

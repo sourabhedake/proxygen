@@ -2,20 +2,21 @@
 name = glog
 
 [download]
-url = https://github.com/google/glog/archive/v0.5.0.tar.gz
-sha256 = eede71f28371bf39aa69b45de23b329d37214016e2055269b3b5e7cfd40b59f5
+url = https://github.com/google/glog/archive/v0.3.5.tar.gz
+sha256 = 7580e408a2c0b5a89ca214739978ce6ff480b5e7d8d7698a2aa92fadc484d1e0
 
 [build]
 builder = cmake
-subdir = glog-0.5.0
+subdir = glog-0.3.5
 
 [dependencies]
 gflags
 
 [cmake.defines]
-BUILD_SHARED_LIBS=ON
+BUILD_SHARED_LIBS=OFF
 BUILD_TESTING=NO
 WITH_PKGCONFIG=ON
+CMAKE_CXX_STANDARD=17
 
 [cmake.defines.os=freebsd]
 HAVE_TR1_UNORDERED_MAP=OFF
@@ -29,4 +30,6 @@ libgoogle-glog-dev
 
 [rpms.distro=fedora]
 glog-devel
+
+
 
