@@ -208,6 +208,34 @@ function setup_glog() {
   cd "$BWD" || exit
 }
 
+function setup_fastfloat() {
+  FASTFLOAT_DIR=$DEPS_DIR/fast_float
+  FASTFLOAT_BUILD_DIR=$DEPS_DIR/fast_float/build/
+  # Using a stable version of fast_float
+  FASTFLOAT_TAG="v6.1.6"
+  if [ ! -d "$FASTFLOAT_DIR" ] ; then
+    echo -e "${COLOR_GREEN}[ INFO ] Cloning fast_float repo ${COLOR_OFF}"
+    git clone https://github.com/fastfloat/fast_float.git "$FASTFLOAT_DIR"
+  fi
+  cd "$FASTFLOAT_DIR"
+  git fetch --tags
+  git checkout "${FASTFLOAT_TAG}"
+  echo -e "${COLOR_GREEN}Building FastFloat ${COLOR_OFF}"
+  mkdir -p "$FASTFLOAT_BUILD_DIR"
+  cd "$FASTFLOAT_BUILD_DIR" || exit
+
+  cmake                                           \
+    -DCMAKE_PREFIX_PATH="$DEPS_DIR"               \
+    -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+    -DFASTFLOAT_TEST=OFF                          \
+    ..
+  make -j "$JOBS"
+  make install
+  echo -e "${COLOR_GREEN}FastFloat is installed ${COLOR_OFF}"
+  cd "$BWD" || exit
+}
+
 function setup_zstd() {
   ZSTD_DIR=$DEPS_DIR/zstd
   ZSTD_BUILD_DIR=$DEPS_DIR/zstd/build/cmake/builddir
@@ -460,6 +488,7 @@ cd "$(dirname "$0")"
 setup_fmt
 setup_googletest
 setup_glog
+setup_fastfloat
 setup_zstd
 setup_folly
 setup_fizz
