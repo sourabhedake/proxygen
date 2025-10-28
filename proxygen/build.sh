@@ -208,6 +208,35 @@ function setup_glog() {
   cd "$BWD" || exit
 }
 
+function setup_libevent() {
+  LIBEVENT_DIR=$DEPS_DIR/libevent
+  LIBEVENT_BUILD_DIR=$DEPS_DIR/libevent/build/
+  LIBEVENT_VERSION="2.1.12-stable"
+  if [ ! -d "$LIBEVENT_DIR" ] ; then
+    echo -e "${COLOR_GREEN}[ INFO ] Cloning libevent repo ${COLOR_OFF}"
+    git clone https://github.com/libevent/libevent.git "$LIBEVENT_DIR"
+  fi
+  cd "$LIBEVENT_DIR"
+  git fetch --tags
+  git checkout "release-${LIBEVENT_VERSION}"
+  echo -e "${COLOR_GREEN}Building libevent ${COLOR_OFF}"
+  mkdir -p "$LIBEVENT_BUILD_DIR"
+  cd "$LIBEVENT_BUILD_DIR" || exit
+
+  cmake                                           \
+    -DCMAKE_PREFIX_PATH="$DEPS_DIR"               \
+    -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+    -DEVENT__DISABLE_BENCHMARK=ON                 \
+    -DEVENT__DISABLE_TESTS=ON                     \
+    -DEVENT__DISABLE_SAMPLES=ON                   \
+    ..
+  make -j "$JOBS"
+  make install
+  echo -e "${COLOR_GREEN}libevent is installed ${COLOR_OFF}"
+  cd "$BWD" || exit
+}
+
 function setup_fastfloat() {
   FASTFLOAT_DIR=$DEPS_DIR/fast_float
   FASTFLOAT_BUILD_DIR=$DEPS_DIR/fast_float/build/
@@ -488,6 +517,7 @@ cd "$(dirname "$0")"
 setup_fmt
 setup_googletest
 setup_glog
+setup_libevent
 setup_fastfloat
 setup_zstd
 setup_folly
