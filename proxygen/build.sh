@@ -201,20 +201,6 @@ function setup_glog() {
     -DBUILD_TESTING=OFF \
     -DWITH_GFLAGS=ON \
     ..
-
-  # Patch glog header to suppress sign-compare warnings in template comparisons
-  GLOG_HEADER="$DEPS_DIR/include/glog/logging.h"
-  if [ -f "$GLOG_HEADER" ]; then
-    echo -e "${COLOR_GREEN}Patching glog header to suppress sign-compare warnings ${COLOR_OFF}"
-    # Backup the original file
-    cp "$GLOG_HEADER" "$GLOG_HEADER.orig"
-    # Add pragma push and ignored warning after the opening brace of the template function
-    sed -i '/^  inline std::string\* name##Impl(const T1& v1, const T2& v2,    \\/a\    _Pragma("GCC diagnostic push") \\\n    _Pragma("GCC diagnostic ignored \\"-Wsign-compare\\"") \\' "$GLOG_HEADER"
-    # Add pragma pop before the closing brace
-    sed -i '/^    else return MakeCheckOpString(v1, v2, exprtext); \\/a\    _Pragma("GCC diagnostic pop") \\' "$GLOG_HEADER"
-    echo -e "${COLOR_GREEN}Successfully patched glog header ${COLOR_OFF}"
-  fi
-  
   make -j "$JOBS"
   make install
   echo -e "${COLOR_GREEN}glog is installed ${COLOR_OFF}"
@@ -355,6 +341,17 @@ function setup_folly() {
     ..
   make -j "$JOBS"
   make install
+  # Patch folly ThreadLocalDetail.h to fix sign-compare warnings in DCHECK_EQ
+  FOLLY_THREADLOCAL_HEADER="$DEPS_DIR/include/folly/detail/ThreadLocalDetail.h"
+  if [ -f "$FOLLY_THREADLOCAL_HEADER" ]; then
+    echo -e "${COLOR_GREEN}Patching folly ThreadLocalDetail.h to fix sign-compare warnings ${COLOR_OFF}"
+    # Create a backup
+    cp "$FOLLY_THREADLOCAL_HEADER" "$FOLLY_THREADLOCAL_HEADER.orig" 2>/dev/null || true
+    sed -i 's/DCHECK_NE(0,/DCHECK_NE(0u,/' "$FOLLY_THREADLOCAL_HEADER"
+    sed -i 's/DCHECK_EQ(0,/DCHECK_EQ(0u,/' "$FOLLY_THREADLOCAL_HEADER"
+    echo -e "${COLOR_GREEN}Successfully patched folly ThreadLocalDetail.h ${COLOR_OFF}"
+  fi
+
   echo -e "${COLOR_GREEN}Folly is installed ${COLOR_OFF}"
   cd "$BWD" || exit
 }
@@ -528,7 +525,7 @@ mkdir -p "$DEPS_DIR"
 cd "$(dirname "$0")"
 
 setup_fmt
-setup_googletest
+#setup_googletest
 setup_glog
 setup_libevent
 setup_fastfloat
