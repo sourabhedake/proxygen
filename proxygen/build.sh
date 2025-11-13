@@ -197,10 +197,24 @@ function setup_glog() {
     -DCMAKE_PREFIX_PATH="$DEPS_DIR" \
     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DBUILD_SHARED_LIBS=OFF \
+	-DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
     -DWITH_GFLAGS=ON \
     ..
+
+  # Patch glog header to suppress sign-compare warnings in template comparisons
+  GLOG_HEADER="$DEPS_DIR/include/glog/logging.h"
+  if [ -f "$GLOG_HEADER" ]; then
+    echo -e "${COLOR_GREEN}Patching glog header to suppress sign-compare warnings ${COLOR_OFF}"
+    # Backup the original file
+    cp "$GLOG_HEADER" "$GLOG_HEADER.orig"
+    # Add pragma push and ignored warning after the opening brace of the template function
+    sed -i '/^  inline std::string\* name##Impl(const T1& v1, const T2& v2,    \\/a\    _Pragma("GCC diagnostic push") \\\n    _Pragma("GCC diagnostic ignored \\"-Wsign-compare\\"") \\' "$GLOG_HEADER"
+    # Add pragma pop before the closing brace
+    sed -i '/^    else return MakeCheckOpString(v1, v2, exprtext); \\/a\    _Pragma("GCC diagnostic pop") \\' "$GLOG_HEADER"
+    echo -e "${COLOR_GREEN}Successfully patched glog header ${COLOR_OFF}"
+  fi
+  
   make -j "$JOBS"
   make install
   echo -e "${COLOR_GREEN}glog is installed ${COLOR_OFF}"
