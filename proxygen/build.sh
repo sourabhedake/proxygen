@@ -525,7 +525,7 @@ mkdir -p "$DEPS_DIR"
 cd "$(dirname "$0")"
 
 setup_fmt
-#setup_googletest
+setup_googletest
 setup_glog
 setup_libevent
 setup_fastfloat
