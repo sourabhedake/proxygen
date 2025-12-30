@@ -333,6 +333,7 @@ function setup_folly() {
     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
     -DBUILD_TESTS=OFF                             \
+    -DFOLLY_USE_SYMBOLIZER=OFF                    \
     "$MAYBE_USE_STATIC_DEPS"                      \
     "$MAYBE_USE_STATIC_BOOST"                     \
     "$MAYBE_BUILD_SHARED_LIBS"                    \
