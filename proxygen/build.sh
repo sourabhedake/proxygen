@@ -301,6 +301,39 @@ function setup_folly() {
   fi
   synch_dependency_to_commit "$FOLLY_DIR" "$BASE_DIR"/../build/deps/github_hashes/facebook/folly-rev.txt
   
+  # PATCH: Disable Folly symbolizer for ASan compatibility
+  echo -e "${COLOR_GREEN}[ INFO ] Applying Folly symbolizer patch for ASan compatibility ${COLOR_OFF}"
+  FOLLY_DEPS_CMAKE="$FOLLY_DIR/CMake/folly-deps.cmake"
+  if [ -f "$FOLLY_DEPS_CMAKE" ]; then
+    # Backup original
+    cp "$FOLLY_DEPS_CMAKE" "${FOLLY_DEPS_CMAKE}.backup"
+    
+    # Apply patch to disable symbolizer
+    sed -i '/^set(FOLLY_USE_SYMBOLIZER OFF)/,/^message(STATUS "Setting FOLLY_HAVE_DWARF:/c\
+# PATCHED: Completely disable Folly symbolizer for ASan compatibility\
+set(FOLLY_USE_SYMBOLIZER OFF)\
+set(FOLLY_HAVE_ELF OFF)\
+set(FOLLY_HAVE_BACKTRACE OFF)\
+set(FOLLY_HAVE_DWARF OFF)\
+\
+# Commented out to prevent overriding\
+# CHECK_INCLUDE_FILE_CXX(elf.h FOLLY_HAVE_ELF)\
+# find_package(Backtrace)\
+# set(FOLLY_HAVE_BACKTRACE ${Backtrace_FOUND})\
+# set(FOLLY_HAVE_DWARF ${LIBDWARF_FOUND})\
+# if (NOT WIN32 AND NOT APPLE)\
+#   set(FOLLY_USE_SYMBOLIZER ON)\
+# endif()\
+\
+message(STATUS "Setting FOLLY_USE_SYMBOLIZER: ${FOLLY_USE_SYMBOLIZER} (PATCHED: Forced OFF)")\
+message(STATUS "Setting FOLLY_HAVE_ELF: ${FOLLY_HAVE_ELF} (PATCHED: Forced OFF)")\
+message(STATUS "Setting FOLLY_HAVE_DWARF: ${FOLLY_HAVE_DWARF} (PATCHED: Forced OFF)")' "$FOLLY_DEPS_CMAKE"
+    
+    echo -e "${COLOR_GREEN}[ INFO ] Folly symbolizer patch applied ${COLOR_OFF}"
+  else
+    echo -e "${COLOR_RED}[ WARNING ] Could not find folly-deps.cmake to patch ${COLOR_OFF}"
+  fi
+  
   if [ "$PLATFORM" = "Mac" ]; then
     # Homebrew installs OpenSSL in a non-default location on MacOS >= Mojave
     # 10.14 because MacOS has its own SSL implementation.  If we find the
