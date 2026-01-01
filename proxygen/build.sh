@@ -304,36 +304,19 @@ function setup_folly() {
   # PATCH: Disable Folly symbolizer for ASan compatibility
   echo -e "${COLOR_GREEN}[ INFO ] Applying Folly symbolizer patch for ASan compatibility ${COLOR_OFF}"
   FOLLY_DEPS_CMAKE="$FOLLY_DIR/CMake/folly-deps.cmake"
+  
   if [ -f "$FOLLY_DEPS_CMAKE" ]; then
     # Backup original
-    cp "$FOLLY_DEPS_CMAKE" "${FOLLY_DEPS_CMAKE}.backup"
+    cp "$FOLLY_DEPS_CMAKE" "${FOLLY_DEPS_CMAKE}.backup" 2>/dev/null || true
     
-    # Apply patch to disable symbolizer
-    sed -i '/^set(FOLLY_USE_SYMBOLIZER OFF)/,/^message(STATUS "Setting FOLLY_HAVE_DWARF:/c\
-# PATCHED: Completely disable Folly symbolizer for ASan compatibility\
-set(FOLLY_USE_SYMBOLIZER OFF)\
-set(FOLLY_HAVE_ELF OFF)\
-set(FOLLY_HAVE_BACKTRACE OFF)\
-set(FOLLY_HAVE_DWARF OFF)\
-\
-# Commented out to prevent overriding\
-# CHECK_INCLUDE_FILE_CXX(elf.h FOLLY_HAVE_ELF)\
-# find_package(Backtrace)\
-# set(FOLLY_HAVE_BACKTRACE ${Backtrace_FOUND})\
-# set(FOLLY_HAVE_DWARF ${LIBDWARF_FOUND})\
-# if (NOT WIN32 AND NOT APPLE)\
-#   set(FOLLY_USE_SYMBOLIZER ON)\
-# endif()\
-\
-message(STATUS "Setting FOLLY_USE_SYMBOLIZER: ${FOLLY_USE_SYMBOLIZER} (PATCHED: Forced OFF)")\
-message(STATUS "Setting FOLLY_HAVE_ELF: ${FOLLY_HAVE_ELF} (PATCHED: Forced OFF)")\
-message(STATUS "Setting FOLLY_HAVE_DWARF: ${FOLLY_HAVE_DWARF} (PATCHED: Forced OFF)")' "$FOLLY_DEPS_CMAKE"
+    # Patch to force FOLLY_USE_SYMBOLIZER OFF
+    sed -i 's/set(FOLLY_USE_SYMBOLIZER OFF)/set(FOLLY_USE_SYMBOLIZER OFF CACHE BOOL "Disable symbolizer for ASan" FORCE)/' "$FOLLY_DEPS_CMAKE"
+    sed -i 's/if (NOT WIN32 AND NOT APPLE)/if (FALSE)  # Patched: Always disable symbolizer/' "$FOLLY_DEPS_CMAKE"
+    sed -i '/set(FOLLY_USE_SYMBOLIZER ON)/d' "$FOLLY_DEPS_CMAKE"
     
     echo -e "${COLOR_GREEN}[ INFO ] Folly symbolizer patch applied ${COLOR_OFF}"
-  else
-    echo -e "${COLOR_RED}[ WARNING ] Could not find folly-deps.cmake to patch ${COLOR_OFF}"
   fi
-  
+    
   if [ "$PLATFORM" = "Mac" ]; then
     # Homebrew installs OpenSSL in a non-default location on MacOS >= Mojave
     # 10.14 because MacOS has its own SSL implementation.  If we find the
@@ -366,6 +349,8 @@ message(STATUS "Setting FOLLY_HAVE_DWARF: ${FOLLY_HAVE_DWARF} (PATCHED: Forced O
     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
     -DBUILD_TESTS=OFF                             \
+    -DLIBDWARF_FOUND=OFF                          \
+    -DFOLLY_HAVE_DWARF=OFF                        \
     -DFOLLY_USE_SYMBOLIZER=OFF                    \
     "$MAYBE_USE_STATIC_DEPS"                      \
     "$MAYBE_USE_STATIC_BOOST"                     \
